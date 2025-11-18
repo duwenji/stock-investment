@@ -126,9 +126,23 @@ erDiagram
         timestamp created_at "作成日時"
     }
 
+    %% 株価履歴テーブル（新規追加）
+    stock_prices_history {
+        int price_id PK "価格ID"
+        string stock_code FK "銘柄コード"
+        date price_date "価格日付"
+        decimal open_price "始値"
+        decimal high_price "高値"
+        decimal low_price "安値"
+        decimal close_price "終値"
+        bigint volume "出来高"
+        timestamp created_at "作成日時"
+    }
+
     %% リレーションシップ定義（外部キー制約付き）
     stocks ||--o{ portfolio_holdings : "保有"
     stocks ||--o{ trading_plans : "計画対象"
+    stocks ||--o{ stock_prices_history : "価格履歴"
     portfolio_holdings ||--|| portfolio_performance : "パフォーマンス"
     trading_plans ||--o{ buy_decisions : "買い判断"
     trading_plans ||--o{ sell_decisions : "売り判断"
@@ -185,6 +199,12 @@ erDiagram
     - 保有銘柄のパフォーマンス情報を管理
     - portfolio_holdingsと1対1の関係
 
+### 株価履歴テーブル
+11. **stock_prices_history（株価履歴）**
+    - 銘柄の日次株価履歴を管理
+    - 始値、高値、安値、終値、出来高を記録
+    - stocksテーブルと1対多の関係
+
 ## 主キーと外部キーの関係
 
 - **主キー（PK）**: 各テーブルの一意な識別子
@@ -218,6 +238,9 @@ erDiagram
 7. **trading_conditions → trading_plans**
    - `plan_id` → `trading_plans.plan_id`
 
+8. **stock_prices_history → stocks**
+   - `stock_code` → `stocks.stock_code`
+
 ## データフローの特徴
 
 1. **銘柄中心の設計**: stocksテーブルを中心に保有情報と計画情報が関連付けられている
@@ -236,8 +259,13 @@ erDiagram
    - `plan_overall_risk`: 計画全体のリスク評価
 
 3. **外部キー制約の追加**:
-   - 7つの外部キー制約をデータベースに追加
+   - 8つの外部キー制約をデータベースに追加
    - データ整合性と参照整合性を確保
+
+4. **株価履歴管理の追加**:
+   - `stock_prices_history`テーブルを新規作成
+   - 日次株価データの履歴管理機能を追加
+   - テクニカル分析の基盤データを提供
 
 4. **リレーションシップの正確化**:
    - 外部キー制約に基づいた正確な関係定義

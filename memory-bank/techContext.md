@@ -29,7 +29,8 @@ stock-investment/
 ├── data/                # データファイル
 │   └── data_j.xls      # 株式データソース
 ├── tools/               # ユーティリティスクリプト
-│   └── sqlalchemy_import_stocks.py  # データインポートスクリプト
+│   ├── sqlalchemy_import_stocks.py      # 株式データインポートスクリプト
+│   └── import_stock_price_history.py    # 株価履歴取得スクリプト
 ├── memory-bank/         # プロジェクトドキュメント
 ├── pyproject.toml       # プロジェクト設定
 ├── uv.lock             # 依存関係ロック
@@ -74,6 +75,7 @@ stock-investment/
 - `risk_assessments` - リスク評価
 - `monitoring_points` - 監視ポイント
 - `trading_conditions` - 取引条件
+- `stock_prices_history` - 株価履歴情報（新規作成）
 
 ## 依存関係管理
 
