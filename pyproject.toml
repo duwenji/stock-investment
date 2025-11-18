@@ -1,0 +1,14 @@
+[project]
+name = "stock-investment"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.3"
+dependencies = [
+    "mplfinance>=0.12.10b0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.2",
+    "sqlalchemy>=2.0.44",
+    "xlrd>=2.0.2",
+    "yfinance>=0.2.65",
+]
