@@ -29,8 +29,8 @@ stock-investment/
 ├── data/                # データファイル
 │   └── data_j.xls      # 株式データソース
 ├── tools/               # ユーティリティスクリプト
-│   ├── sqlalchemy_import_stocks.py      # 株式データインポートスクリプト
-│   └── import_stock_price_history.py    # 株価履歴取得スクリプト
+│   ├── sqlalchemy_import_stocks.py      # 株式基本データインポートスクリプト
+│   └── import_stock_price_history.py    # 株価履歴情報取得スクリプト
 ├── memory-bank/         # プロジェクトドキュメント
 ├── pyproject.toml       # プロジェクト設定
 ├── uv.lock             # 依存関係ロック
@@ -85,6 +85,7 @@ stock-investment/
 - **AI/ML**: scikit-learn, tensorflow (検討中)
 - **Webスクレイピング**: requests, beautifulsoup4
 - **データベース**: psycopg2, sqlalchemy
+- **株価データ取得**: yfinance
 
 ### 開発依存関係
 - **テスト**: pytest
@@ -118,6 +119,24 @@ stock-investment/
 2. **データ処理**: Pythonでの分析と変換
 3. **データ保存**: PostgreSQLへの永続化
 4. **データ活用**: AI分析と可視化
+
+## ツールスクリプト詳細
+
+### sqlalchemy_import_stocks.py
+- **目的**: Excelファイルから株式基本データをデータベースにインポート
+- **技術**: SQLAlchemy ORMを使用したバッチ処理
+- **データソース**: data_j.xls (4,412件の株式データ)
+- **機能**: テストモード/本番モードの切り替え
+
+### import_stock_price_history.py
+- **目的**: 保有銘柄の株価履歴を取得してデータベースに保存
+- **技術**: yfinance API + SQLAlchemy
+- **データソース**: portfolio_holdingsテーブルから自動取得
+- **機能**: 
+  - 保有銘柄一覧の自動取得
+  - 1年分の株価履歴取得
+  - ポートフォリオ評価額の自動更新
+  - 重複データの防止
 
 ## パフォーマンス考慮事項
 
