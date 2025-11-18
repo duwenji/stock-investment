@@ -8,3 +8,4 @@ wheels/
 
 # Virtual environments
 .venv
+tools/stock_price_history_import.log
