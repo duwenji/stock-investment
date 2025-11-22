@@ -5,7 +5,7 @@ SQLAlchemyを使用して分析結果をデータベースに保存
 """
 
 import logging
-from typing import Dict, List
+from typing import Dict, List, Any
 from datetime import datetime, date
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -30,8 +30,8 @@ class AnalysisDataManager:
         
         # データベース接続の設定
         if database_url is None:
-            # 既存のデータベース接続設定を使用
-            database_url = "postgresql://postgres:password@localhost:5432/stock_investment"
+            # MCPサーバーの接続設定を使用
+            database_url = "postgresql://postgres:postgres@localhost:5432/mcp-postgres-db"
         
         self.engine = create_engine(database_url)
         self.Session = sessionmaker(bind=self.engine)
@@ -42,6 +42,32 @@ class AnalysisDataManager:
             logger.info("データベース接続を初期化しました")
         except Exception as e:
             logger.warning(f"データベース接続初期化中に警告: {e}")
+    
+    def _convert_to_python_types(self, data: Any) -> Any:
+        """NumPy型やその他の特殊型をPython標準型に変換"""
+        try:
+            import numpy as np
+            
+            if isinstance(data, (np.integer, np.int64, np.int32)):
+                return int(data)
+            elif isinstance(data, (np.floating, np.float64, np.float32)):
+                return float(data)
+            elif isinstance(data, np.bool_):
+                return bool(data)
+            elif isinstance(data, np.ndarray):
+                return [self._convert_to_python_types(item) for item in data]
+            elif isinstance(data, dict):
+                return {key: self._convert_to_python_types(value) for key, value in data.items()}
+            elif isinstance(data, list):
+                return [self._convert_to_python_types(item) for item in data]
+            else:
+                return data
+        except ImportError:
+            # NumPyが利用できない場合はそのまま返す
+            return data
+        except Exception as e:
+            logger.warning(f"型変換中にエラー: {e}")
+            return data
     
     def save_technical_indicators(self, stock_code: str, indicators: Dict, 
                                 investment_style: str, analysis_date: date = None) -> bool:
@@ -70,30 +96,33 @@ class AnalysisDataManager:
                 logger.info(f"銘柄 {stock_code} のテクニカル指標は既に存在します（スタイル: {investment_style}）")
                 return True
             
+            # NumPy型をPython標準型に変換
+            converted_indicators = self._convert_to_python_types(indicators)
+            
             # 新しいレコードを作成
             indicator = TechnicalIndicator(
                 stock_code=stock_code,
                 analysis_date=analysis_date,
                 investment_style=investment_style,
-                current_price=indicators.get('current_price'),
-                sma_5=indicators.get('sma_5'),
-                sma_10=indicators.get('sma_10'),
-                sma_20=indicators.get('sma_20'),
-                sma_50=indicators.get('sma_50'),
-                rsi_14=indicators.get('rsi_14'),
-                macd_line=indicators.get('macd_line'),
-                macd_signal=indicators.get('macd_signal'),
-                macd_histogram=indicators.get('macd_histogram'),
-                bb_upper=indicators.get('bb_upper'),
-                bb_middle=indicators.get('bb_middle'),
-                bb_lower=indicators.get('bb_lower'),
-                stoch_k=indicators.get('stoch_k'),
-                stoch_d=indicators.get('stoch_d'),
-                volume_ratio=indicators.get('volume_ratio'),
-                price_change_1d=indicators.get('price_change_1d'),
-                price_change_5d=indicators.get('price_change_5d'),
-                price_change_20d=indicators.get('price_change_20d'),
-                volatility_20d=indicators.get('volatility_20d'),
+                current_price=converted_indicators.get('current_price'),
+                sma_5=converted_indicators.get('sma_5'),
+                sma_10=converted_indicators.get('sma_10'),
+                sma_20=converted_indicators.get('sma_20'),
+                sma_50=converted_indicators.get('sma_50'),
+                rsi_14=converted_indicators.get('rsi_14'),
+                macd_line=converted_indicators.get('macd_line'),
+                macd_signal=converted_indicators.get('macd_signal'),
+                macd_histogram=converted_indicators.get('macd_histogram'),
+                bb_upper=converted_indicators.get('bb_upper'),
+                bb_middle=converted_indicators.get('bb_middle'),
+                bb_lower=converted_indicators.get('bb_lower'),
+                stoch_k=converted_indicators.get('stoch_k'),
+                stoch_d=converted_indicators.get('stoch_d'),
+                volume_ratio=converted_indicators.get('volume_ratio'),
+                price_change_1d=converted_indicators.get('price_change_1d'),
+                price_change_5d=converted_indicators.get('price_change_5d'),
+                price_change_20d=converted_indicators.get('price_change_20d'),
+                volatility_20d=converted_indicators.get('volatility_20d'),
                 confidence_score=confidence_score,
                 analysis_version='v1.0',
                 created_at=datetime.now()
