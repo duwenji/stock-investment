@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>銘柄レポート一覧</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .stats-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .signal-buy {
+            color: #28a745;
+        }
+        
+        .signal-sell {
+            color: #dc3545;
+        }
+        
+        .signal-neutral {
+            color: #6c757d;
+        }
+        
+        .filters {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .filter-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .stocks-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .stocks-table th,
+        .stocks-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .stocks-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .stocks-table th:hover {
+            background-color: #e9ecef;
+        }
+        
+        .stocks-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .signal-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            display: inline-block;
+            min-width: 60px;
+        }
+        
+        .signal-badge.buy {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .signal-badge.sell {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .signal-badge.neutral {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .price-change {
+            font-weight: bold;
+        }
+        
+        .price-change.positive {
+            color: #28a745;
+        }
+        
+        .price-change.negative {
+            color: #dc3545;
+        }
+        
+        .price-change.neutral {
+            color: #6c757d;
+        }
+        
+        .action-links {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-link {
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.8em;
+            transition: background-color 0.2s;
+        }
+        
+        .action-link:hover {
+            background: #5a6fd8;
+        }
+        
+        .action-link.long-term {
+            background: #764ba2;
+        }
+        
+        .action-link.long-term:hover {
+            background: #6a4190;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .stocks-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .action-links {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>銘柄レポート一覧</h1>
+            <div class="subtitle">短期・長期投資分析レポートの総合一覧</div>
+        </div>
+        
+        <!-- 統計情報 -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">総銘柄数</div>
+                    <div class="stat-value">{{ total_stocks }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">短期買い推奨</div>
+                    <div class="stat-value signal-buy">{{ short_term_buy_signals }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">短期売り推奨</div>
+                    <div class="stat-value signal-sell">{{ short_term_sell_signals }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">長期買い推奨</div>
+                    <div class="stat-value signal-buy">{{ long_term_buy_signals }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">長期売り推奨</div>
+                    <div class="stat-value signal-sell">{{ long_term_sell_signals }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- フィルター -->
+        <div class="filters">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">短期シグナル</label>
+                    <select class="filter-select" id="shortTermFilter">
+                        <option value="all">すべて</option>
+                        <option value="buy">買い推奨</option>
+                        <option value="sell">売り推奨</option>
+                        <option value="neutral">中立</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">長期シグナル</label>
+                    <select class="filter-select" id="longTermFilter">
+                        <option value="all">すべて</option>
+                        <option value="buy">買い推奨</option>
+                        <option value="sell">売り推奨</option>
+                        <option value="neutral">中立</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">業種</label>
+                    <select class="filter-select" id="industryFilter">
+                        <option value="all">すべて</option>
+                        <!-- 業種オプションはJavaScriptで動的に追加 -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">並び替え</label>
+                    <select class="filter-select" id="sortBy">
+                        <option value="code">銘柄コード</option>
+                        <option value="name">銘柄名</option>
+                        <option value="price">現在価格</option>
+                        <option value="change1d">1日変動率</option>
+                        <option value="change5d">5日変動率</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 銘柄一覧テーブル -->
+        <div style="overflow-x: auto;">
+            <table class="stocks-table" id="stocksTable">
+                <thead>
+                    <tr>
+                        <th data-sort="code">銘柄コード</th>
+                        <th data-sort="name">銘柄名</th>
+                        <th data-sort="industry">業種</th>
+                        <th data-sort="market">市場</th>
+                        <th data-sort="price">現在価格</th>
+                        <th data-sort="change1d">1日変動</th>
+                        <th data-sort="change5d">5日変動</th>
+                        <th data-sort="change20d">20日変動</th>
+                        <th>短期シグナル</th>
+                        <th>長期シグナル</th>
+                        <th>アクション</th>
+                    </tr>
+                </thead>
+                <tbody id="stocksTableBody">
+                    {% for stock in stock_summaries %}
+                    <tr class="stock-row" 
+                        data-short-term="{{ 'buy' if '買い' in stock.short_term_signal else 'sell' if '売り' in stock.short_term_signal else 'neutral' }}"
+                        data-long-term="{{ 'buy' if '買い' in stock.long_term_signal else 'sell' if '売り' in stock.long_term_signal else 'neutral' }}"
+                        data-industry="{{ stock.industry }}"
+                        data-code="{{ stock.stock_code }}"
+                        data-name="{{ stock.stock_name }}"
+                        data-price="{{ stock.current_price }}"
+                        data-change1d="{{ stock.price_change_1d or 0 }}"
+                        data-change5d="{{ stock.price_change_5d or 0 }}">
+                        <td>{{ stock.stock_code }}</td>
+                        <td>{{ stock.stock_name }}</td>
+                        <td>{{ stock.industry }}</td>
+                        <td>{{ stock.market }}</td>
+                        <td>{{ stock.current_price_formatted }} 円</td>
+                        <td>
+                            {% if stock.price_change_1d is not none %}
+                            <span class="price-change {{ 'positive' if stock.price_change_1d > 0 else 'negative' if stock.price_change_1d < 0 else 'neutral' }}">
+                                {{ stock.price_change_1d_formatted }}
+                            </span>
+                            {% else %}
+                            <span class="price-change neutral">不明</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if stock.price_change_5d is not none %}
+                            <span class="price-change {{ 'positive' if stock.price_change_5d > 0 else 'negative' if stock.price_change_5d < 0 else 'neutral' }}">
+                                {{ stock.price_change_5d_formatted }}
+                            </span>
+                            {% else %}
+                            <span class="price-change neutral">不明</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if stock.price_change_20d is not none %}
+                            <span class="price-change {{ 'positive' if stock.price_change_20d > 0 else 'negative' if stock.price_change_20d < 0 else 'neutral' }}">
+                                {{ stock.price_change_20d_formatted }}
+                            </span>
+                            {% else %}
+                            <span class="price-change neutral">不明</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="signal-badge {{ 'buy' if '買い' in stock.short_term_signal else 'sell' if '売り' in stock.short_term_signal else 'neutral' }}">
+                                {{ stock.short_term_signal }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if stock.has_long_term_analysis %}
+                            <span class="signal-badge {{ 'buy' if '買い' in stock.long_term_signal else 'sell' if '売り' in stock.long_term_signal else 'neutral' }}">
+                                {{ stock.long_term_signal }}
+                            </span>
+                            {% else %}
+                            <span class="signal-badge neutral">データ不足</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-links">
+                                <a href="short_term/{{ stock.stock_code }}.html" class="action-link" target="_blank">
+                                    短期レポート
+                                </a>
+                                {% if stock.has_long_term_analysis %}
+                                <a href="long_term/{{ stock.stock_code }}.html" class="action-link long-term" target="_blank">
+                                    長期レポート
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not stock_summaries %}
+        <div class="no-data">
+            <h3>データがありません</h3>
+            <p>銘柄データの取得に失敗しました。データベース接続を確認してください。</p>
+        </div>
+        {% endif %}
+        
+        <!-- フッター -->
+        <div class="footer">
+            <p>生成日時: {{ generation_date }}</p>
+            <p>総銘柄数: {{ total_stocks }} (成功: {{ successful_stocks }}, 失敗: {{ failed_stocks|length }})</p>
+            <p>この一覧は自動生成されたものです。投資判断は自己責任でお願いします。</p>
+        </div>
+    </div>
+
+    <script>
+        // フィルター機能
+        document.addEventListener('DOMContentLoaded', function() {
+            const shortTermFilter = document.getElementById('shortTermFilter');
+            const longTermFilter = document.getElementById('longTermFilter');
+            const industryFilter = document.getElementById('industryFilter');
+            const sortBy = document.getElementById('sortBy');
+            const stocksTableBody = document.getElementById('stocksTableBody');
+            const stockRows = document.querySelectorAll('.stock-row');
+            
+            // 業種オプションを動的に追加
+            const industries = new Set();
+            stockRows.forEach(row => {
+                industries.add(row.dataset.industry);
+            });
+            
+            industries.forEach(industry => {
+                const option = document.createElement('option');
+                option.value = industry;
+                option.textContent = industry;
+                industryFilter.appendChild(option);
+            });
+            
+            // フィルター適用関数
+            function applyFilters() {
+                const shortTermValue = shortTermFilter.value;
+                const longTermValue = longTermFilter.value;
+                const industryValue = industryFilter.value;
+                
+                stockRows.forEach(row => {
+                    const showShortTerm = shortTermValue === 'all' || row.dataset.shortTerm === shortTermValue;
+                    const showLongTerm = longTermValue === 'all' || row.dataset.longTerm === longTermValue;
+                    const showIndustry = industryValue === 'all' || row.dataset.industry === industryValue;
+                    
+                    if (showShortTerm && showLongTerm && showIndustry) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            // ソート機能
+            function sortTable(column, direction = 'asc') {
+                const rows = Array.from(stockRows).filter(row => row.style.display !== 'none');
+                
+                rows.sort((a, b) => {
+                    let aValue, bValue;
+                    
+                    switch(column) {
+                        case 'code':
+                            aValue = a.dataset.code;
+                            bValue = b.dataset.code;
+                            break;
+                        case 'name':
+                            aValue = a.dataset.name;
+                            bValue = b.dataset.name;
+                            break;
+                        case 'industry':
+                            aValue = a.dataset.industry;
+                            bValue = b.dataset.industry;
+                            break;
+                        case 'price':
+                            aValue = parseFloat(a.dataset.price) || 0;
+                            bValue = parseFloat(b.dataset.price) || 0;
+                            break;
+                        case 'change1d':
+                            aValue = parseFloat(a.dataset.change1d) || 0;
+                            bValue = parseFloat(b.dataset.change1d) || 0;
+                            break;
+                        case 'change5d':
+                            aValue = parseFloat(a.dataset.change5d) || 0;
+                            bValue = parseFloat(b.dataset.change5d) || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+                    
+                    if (direction === 'asc') {
+                        return aValue > bValue ? 1 : -1;
+                    } else {
+                        return aValue < bValue ? 1 : -1;
+                    }
+                });
+                
+                // テーブルを再構築
+                rows.forEach(row => {
+                    stocksTableBody.appendChild(row);
+                });
+            }
+            
+            // イベントリスナー
+            shortTermFilter.addEventListener('change', applyFilters);
+            longTermFilter.addEventListener('change', applyFilters);
+            industryFilter.addEventListener('change', applyFilters);
+            sortBy.addEventListener('change', function() {
+                sortTable(this.value);
+            });
+            
+            // テーブルヘッダークリックでのソート
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', function() {
+                    const column = this.dataset.sort;
+                    sortTable(column);
+                });
+            });
+            
+            // 初期フィルター適用
+            applyFilters();
+        });
+    </script>
+</body>
+</html>

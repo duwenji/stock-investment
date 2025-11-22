@@ -12,3 +12,6 @@ reports/
 tools/stock_price_history_import.log
 stock_price_history_import.log
 stock_report_generation.log
+all_reports_generation.log
+long_term_stock_report_generation.log
+report_index_generation.log

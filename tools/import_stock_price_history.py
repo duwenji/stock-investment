@@ -113,13 +113,13 @@ def convert_to_yfinance_symbol(stock_code: str) -> str:
     # 日本株の場合、".T"を追加
     return f"{stock_code}.T"
 
-def get_stock_price_history(stock_code: str, period: str = "1y") -> Optional[pd.DataFrame]:
-    """yfinanceを使用して株価履歴を取得"""
+def get_stock_price_history(stock_code: str, period: str = "max") -> Optional[pd.DataFrame]:
+    """yfinanceを使用して株価履歴を取得（最大可能期間）"""
     try:
         yfinance_symbol = convert_to_yfinance_symbol(stock_code)
         logger.info(f"株価履歴取得中: {stock_code} -> {yfinance_symbol} (期間: {period})")
         
-        # yfinanceで株価履歴を取得
+        # yfinanceで株価履歴を取得（最大可能期間）
         ticker = yf.Ticker(yfinance_symbol)
         hist_data = ticker.history(period=period)
         
@@ -127,7 +127,7 @@ def get_stock_price_history(stock_code: str, period: str = "1y") -> Optional[pd.
             logger.warning(f"{stock_code}の株価履歴データがありません")
             return None
         
-        logger.info(f"{stock_code}の株価履歴取得完了: {len(hist_data)}日分")
+        logger.info(f"{stock_code}の株価履歴取得完了: {len(hist_data)}日分（{hist_data.index[0].date()} 〜 {hist_data.index[-1].date()}）")
         return hist_data
         
     except Exception as e:
@@ -219,8 +219,8 @@ def main():
         
         for stock_code in stock_codes:
             try:
-                # 株価履歴の取得
-                hist_data = get_stock_price_history(stock_code, period="1y")
+                # 株価履歴の取得（最大可能期間）
+                hist_data = get_stock_price_history(stock_code, period="max")
                 
                 if hist_data is not None:
                     # データベースに保存
