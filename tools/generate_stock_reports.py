@@ -9,11 +9,11 @@ import os
 import logging
 import json
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict
 import jinja2
-
 # モジュールのパスを追加
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
 
 from report_generator.data_fetcher import DataFetcher
 from report_generator.analyzer import StockAnalyzer

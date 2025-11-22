@@ -7,8 +7,7 @@ portfolio_holdingsとtrading_plansから対象銘柄を取得し、関連デー�
 import logging
 import pandas as pd
 import os
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
+from typing import List, Dict, Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 

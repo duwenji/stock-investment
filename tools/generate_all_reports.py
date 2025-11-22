@@ -10,9 +10,11 @@ import logging
 import json
 from datetime import datetime
 from typing import Dict
-
 # モジュールのパスを追加
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
+from generate_stock_reports import StockReportGenerator
 
 # ロギング設定
 logging.basicConfig(
@@ -49,7 +51,6 @@ class AllReportsGenerator:
             logger.info("=== 短期レポート生成開始 ===")
             
             # 短期レポート生成スクリプトをインポートして実行
-            from generate_stock_reports import StockReportGenerator
             
             generator = StockReportGenerator(output_dir=self.short_term_dir)
             result = generator.generate_all_reports()
@@ -98,7 +99,7 @@ class AllReportsGenerator:
             return {'success': False, 'message': str(e)}
  
  
-    def generate_all(self) -> Dict:
+    def generate_all(self, save_to_database: bool = True) -> Dict:
         """すべてのレポートを生成"""
         logger.info("=== 全レポート一括生成開始 ===")
         start_time = datetime.now()
@@ -119,12 +120,28 @@ class AllReportsGenerator:
                 logger.error("一覧ページ生成に失敗しました")
                 return {'success': False, 'message': '一覧ページ生成に失敗'}
             
+            # データベース保存（オプション）
+            database_result = None
+            if save_to_database:
+                try:
+                    from batch_save_analysis_data import BatchDataSaver
+                    saver = BatchDataSaver()
+                    database_result = saver.save_all_analysis_data()
+                    if database_result.get('success', False):
+                        logger.info("分析データのデータベース保存が完了しました")
+                    else:
+                        logger.warning(f"分析データのデータベース保存に失敗: {database_result.get('message', '不明なエラー')}")
+                except Exception as e:
+                    logger.warning(f"データベース保存中にエラーが発生しましたが、処理を継続します: {e}")
+                    database_result = {'success': False, 'message': str(e)}
+            
             summary = {
                 'success': True,
                 'execution_time': (datetime.now() - start_time).total_seconds(),
                 'short_term': short_term_result,
                 'long_term': long_term_result,
                 'index': index_result,
+                'database': database_result,
                 'generation_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
             
