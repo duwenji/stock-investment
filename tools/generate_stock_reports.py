@@ -51,10 +51,10 @@ class StockReportGenerator:
             autoescape=True
         )
     
-    def generate_single_report(self, stock_code: str) -> bool:
+    def generate_single_report(self, stock_code: str, investment_style: str = None) -> bool:
         """単一銘柄のレポートを生成"""
         try:
-            logger.info(f"銘柄 {stock_code} のレポート生成開始")
+            logger.info(f"銘柄 {stock_code} のレポート生成開始（スタイル: {investment_style or '標準'}）")
             
             # 1. データ取得
             stock_data = self.data_fetcher.get_all_stock_data(stock_code)
@@ -65,8 +65,12 @@ class StockReportGenerator:
                 logger.warning(f"銘柄 {stock_code} の株価データがありません")
                 return False
             
-            # 2. 分析実行
-            analysis_result = self.analyzer.analyze_stock(stock_data)
+            # 2. 分析実行（投資スタイル別または標準分析）
+            if investment_style:
+                analysis_result = self.analyzer.analyze_stock_by_style(stock_data, investment_style)
+            else:
+                analysis_result = self.analyzer.analyze_stock(stock_data)
+                
             if not analysis_result:
                 logger.warning(f"銘柄 {stock_code} の分析に失敗しました")
                 return False
@@ -76,10 +80,16 @@ class StockReportGenerator:
             
             # 4. レポート生成
             report_data = self._prepare_report_data(stock_data, analysis_result, charts)
-            html_content = self._render_html_template(report_data)
+            html_content = self._render_html_template(report_data, investment_style)
             
             # 5. ファイル保存
-            report_filename = os.path.join(self.output_dir, f"{stock_code}.html")
+            if investment_style:
+                style_dir = os.path.join(self.output_dir, investment_style)
+                os.makedirs(style_dir, exist_ok=True)
+                report_filename = os.path.join(style_dir, f"{stock_code}.html")
+            else:
+                report_filename = os.path.join(self.output_dir, f"{stock_code}.html")
+                
             with open(report_filename, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             
@@ -244,10 +254,20 @@ class StockReportGenerator:
         except (ValueError, TypeError):
             return '不明'
     
-    def _render_html_template(self, report_data: Dict) -> str:
+    def _render_html_template(self, report_data: Dict, investment_style: str = None) -> str:
         """HTMLテンプレートをレンダリング"""
         try:
-            template = self.template_env.get_template('template.html')
+            # 投資スタイルに応じたテンプレートを選択
+            if investment_style == 'day_trading':
+                template_name = 'day_trading_template.html'
+            elif investment_style == 'swing_trading':
+                template_name = 'swing_trading_template.html'
+            elif investment_style == 'long_term':
+                template_name = 'long_term_investment_template.html'
+            else:
+                template_name = 'template.html'
+            
+            template = self.template_env.get_template(template_name)
             return template.render(**report_data)
         except Exception as e:
             logger.error(f"HTMLテンプレートのレンダリング中にエラー: {e}")

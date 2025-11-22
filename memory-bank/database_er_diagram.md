@@ -139,10 +139,86 @@ erDiagram
         timestamp created_at "作成日時"
     }
 
+    %% テクニカル指標テーブル（新規追加）
+    technical_indicators {
+        int indicator_id PK "指標ID"
+        string stock_code FK "銘柄コード"
+        date analysis_date "分析日"
+        string investment_style "投資スタイル"
+        decimal current_price "現在価格"
+        decimal sma_5 "5日移動平均"
+        decimal sma_10 "10日移動平均"
+        decimal sma_20 "20日移動平均"
+        decimal sma_50 "50日移動平均"
+        decimal rsi_14 "RSI(14)"
+        decimal macd_line "MACDライン"
+        decimal macd_signal "MACDシグナル"
+        decimal macd_histogram "MACDヒストグラム"
+        decimal bb_upper "ボリンジャーバンド上限"
+        decimal bb_middle "ボリンジャーバンド中央"
+        decimal bb_lower "ボリンジャーバンド下限"
+        decimal stoch_k "ストキャスティクス%K"
+        decimal stoch_d "ストキャスティクス%D"
+        decimal volume_ratio "出来高比率"
+        decimal price_change_1d "1日価格変動"
+        decimal price_change_5d "5日価格変動"
+        decimal price_change_20d "20日価格変動"
+        decimal volatility_20d "20日ボラティリティ"
+        decimal confidence_score "信頼度スコア"
+        string analysis_version "分析バージョン"
+        timestamp created_at "作成日時"
+    }
+
+    %% 投資判断テーブル（新規追加）
+    investment_decisions {
+        int decision_id PK "判断ID"
+        string stock_code FK "銘柄コード"
+        date analysis_date "分析日"
+        string investment_style "投資スタイル"
+        string decision_type "判断タイプ"
+        decimal target_price "目標価格"
+        decimal stop_loss "ストップロス"
+        decimal confidence_score "信頼度スコア"
+        string rsi_signal "RSIシグナル"
+        string macd_signal "MACDシグナル"
+        string bb_signal "ボリンジャーバンドシグナル"
+        string stoch_signal "ストキャスティクスシグナル"
+        string overall_signal "全体シグナル"
+        int buy_count "買いカウント"
+        int sell_count "売りカウント"
+        text ai_reasoning "AI推論"
+        string risk_assessment "リスク評価"
+        timestamp created_at "作成日時"
+    }
+
+    %% バックテスト結果テーブル（新規追加）
+    backtest_results {
+        int backtest_id PK "バックテストID"
+        string stock_code FK "銘柄コード"
+        string investment_style "投資スタイル"
+        string strategy_name "戦略名"
+        date start_date "開始日"
+        date end_date "終了日"
+        decimal total_return "総リターン"
+        decimal annual_return "年率リターン"
+        decimal sharpe_ratio "シャープレシオ"
+        decimal max_drawdown "最大ドローダウン"
+        decimal volatility "ボラティリティ"
+        decimal win_rate "勝率"
+        decimal profit_factor "プロフィットファクター"
+        int total_trades "総取引数"
+        decimal avg_trade_return "平均取引リターン"
+        decimal benchmark_return "ベンチマークリターン"
+        timestamp created_at "作成日時"
+    }
+
     %% リレーションシップ定義（外部キー制約付き）
     stocks ||--o{ portfolio_holdings : "保有"
     stocks ||--o{ trading_plans : "計画対象"
     stocks ||--o{ stock_prices_history : "価格履歴"
+    stocks ||--o{ technical_indicators : "テクニカル指標"
+    stocks ||--o{ investment_decisions : "投資判断"
+    stocks ||--o{ backtest_results : "バックテスト結果"
     portfolio_holdings ||--|| portfolio_performance : "パフォーマンス"
     trading_plans ||--o{ buy_decisions : "買い判断"
     trading_plans ||--o{ sell_decisions : "売り判断"
@@ -205,6 +281,25 @@ erDiagram
     - 始値、高値、安値、終値、出来高を記録
     - stocksテーブルと1対多の関係
 
+### テクニカル分析テーブル
+12. **technical_indicators（テクニカル指標）**
+    - 各種テクニカル指標を管理
+    - 移動平均線、RSI、MACD、ボリンジャーバンド、ストキャスティクスなど
+    - 投資スタイル別の分析結果を保存
+    - stocksテーブルと1対多の関係
+
+13. **investment_decisions（投資判断）**
+    - AIによる投資判断結果を管理
+    - 各テクニカル指標のシグナルと全体判断
+    - 信頼度スコアとリスク評価を含む
+    - stocksテーブルと1対多の関係
+
+14. **backtest_results（バックテスト結果）**
+    - 投資戦略のバックテスト結果を管理
+    - 総リターン、シャープレシオ、最大ドローダウンなどのパフォーマンス指標
+    - 戦略名と投資スタイル別に分類
+    - stocksテーブルと1対多の関係
+
 ## 主キーと外部キーの関係
 
 - **主キー（PK）**: 各テーブルの一意な識別子
@@ -257,6 +352,9 @@ erDiagram
 2. **新しいテーブルの追加**:
    - `portfolio_performance`: ポートフォリオパフォーマンス管理
    - `plan_overall_risk`: 計画全体のリスク評価
+   - `technical_indicators`: テクニカル指標管理
+   - `investment_decisions`: AI投資判断管理
+   - `backtest_results`: バックテスト結果管理
 
 3. **外部キー制約の追加**:
    - 8つの外部キー制約をデータベースに追加
@@ -267,11 +365,17 @@ erDiagram
    - 日次株価データの履歴管理機能を追加
    - テクニカル分析の基盤データを提供
 
-4. **リレーションシップの正確化**:
+5. **テクニカル分析機能の拡張**:
+   - 移動平均線、RSI、MACD、ボリンジャーバンド、ストキャスティクスなどの指標管理
+   - AIによる投資判断と信頼度評価
+   - バックテストによる戦略評価機能
+
+6. **リレーションシップの正確化**:
    - 外部キー制約に基づいた正確な関係定義
    - trading_plansを中心とした1対多の関係構造
+   - stocksテーブルを中心としたテクニカル分析関連テーブルの追加
 
-5. **フィールド名の正確化**:
+7. **フィールド名の正確化**:
    - monitoring_pointsの`point_id`、`point_category`、`point_description`など
    - trading_conditionsの`condition_category`、`min_value`、`max_value`など
 
