@@ -11,7 +11,7 @@
 - **MCPサーバ統合**: 外部データソースとの連携
 
 ### ツールスクリプト
-- `tools/sqlalchemy_import_stocks.py` - 株式基本データのインポートスクリプト
+- `tools/import_stocks.py` - 株式基本データのインポートスクリプト
 - `tools/import_stock_price_history.py` - 株価履歴情報の取得スクリプト
 
 ## 主要機能

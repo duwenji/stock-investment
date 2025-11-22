@@ -4,8 +4,11 @@ __pycache__/
 build/
 dist/
 wheels/
+reports/
 *.egg-info
 
 # Virtual environments
 .venv
 tools/stock_price_history_import.log
+stock_price_history_import.log
+stock_report_generation.log

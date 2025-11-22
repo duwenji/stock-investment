@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-portfolio_holdingsの対象銘柄の株価履歴情報を取得し、stock_prices_historyテーブルに格納するスクリプト
+portfolio_holdingsとtrading_plansの対象銘柄の株価履歴情報を取得し、stock_prices_historyテーブルに格納するスクリプト
 """
 
 import sys
 import os
 import logging
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional
+from datetime import datetime
+from typing import List, Optional
 from sqlalchemy import create_engine, Column, String, Integer, Numeric, Date, Text, TIMESTAMP, BigInteger
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.orm import Session
@@ -44,6 +44,19 @@ class PortfolioHolding(Base):
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
 
+class TradingPlan(Base):
+    """trading_plansテーブルのORMモデル"""
+    __tablename__ = 'trading_plans'
+    
+    plan_id = Column(Integer, primary_key=True)
+    stock_code = Column(String(10))
+    analysis_date = Column(Date)
+    analysis_type = Column(String(100))
+    allocation_percentage = Column(Numeric(5, 2))
+    notes = Column(Text)
+    created_at = Column(TIMESTAMP)
+    updated_at = Column(TIMESTAMP)
+
 class StockPriceHistory(Base):
     """stock_prices_historyテーブルのORMモデル"""
     __tablename__ = 'stock_prices_history'
@@ -72,15 +85,24 @@ def get_database_engine():
     return engine
 
 def get_unique_stock_codes(session: Session) -> List[str]:
-    """portfolio_holdingsからユニークな銘柄コードを取得"""
+    """portfolio_holdingsとtrading_plansからユニークな銘柄コードを取得"""
     try:
-        # SQLAlchemyを使用して銘柄コードを取得
-        stock_codes = session.query(PortfolioHolding.stock_code).distinct().all()
-        unique_codes = [code[0] for code in stock_codes]
+        # portfolio_holdingsから銘柄コードを取得
+        portfolio_codes = session.query(PortfolioHolding.stock_code).distinct().all()
+        portfolio_codes = [code[0] for code in portfolio_codes]
         
-        logger.info(f"ユニーク銘柄数: {len(unique_codes)}")
-        logger.info(f"処理対象銘柄: {unique_codes}")
-        return unique_codes
+        # trading_plansから銘柄コードを取得
+        trading_codes = session.query(TradingPlan.stock_code).distinct().all()
+        trading_codes = [code[0] for code in trading_codes]
+        
+        # 両方のリストを結合して重複を除去
+        all_codes = list(set(portfolio_codes + trading_codes))
+        
+        logger.info(f"ユニーク銘柄数: {len(all_codes)}")
+        logger.info(f"portfolio_holdings銘柄: {portfolio_codes}")
+        logger.info(f"trading_plans銘柄: {trading_codes}")
+        logger.info(f"処理対象銘柄: {all_codes}")
+        return all_codes
         
     except Exception as e:
         logger.error(f"銘柄コード取得中にエラー: {e}")
