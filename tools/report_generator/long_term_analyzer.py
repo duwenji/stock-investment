@@ -135,18 +135,31 @@ class LongTermStockAnalyzer:
                         if hasattr(values, 'iloc'):
                             # pandas Seriesの場合
                             if len(values) > 0:
-                                latest_indicators[key] = values.iloc[-1]
+                                latest_value = values.iloc[-1]
+                                # NaNチェックと型変換
+                                if pd.isna(latest_value):
+                                    latest_indicators[key] = None
+                                else:
+                                    latest_indicators[key] = float(latest_value) if isinstance(latest_value, (int, float, np.number)) else latest_value
                             else:
                                 latest_indicators[key] = None
                         elif isinstance(values, (list, tuple)):
                             # リストまたはタプルの場合
                             if len(values) > 0:
-                                latest_indicators[key] = values[-1]
+                                latest_value = values[-1]
+                                # NaNチェックと型変換
+                                if pd.isna(latest_value):
+                                    latest_indicators[key] = None
+                                else:
+                                    latest_indicators[key] = float(latest_value) if isinstance(latest_value, (int, float, np.number)) else latest_value
                             else:
                                 latest_indicators[key] = None
-                        elif isinstance(values, (int, float, str, bool)):
+                        elif isinstance(values, (int, float, str, bool, np.number)):
                             # スカラー値の場合
-                            latest_indicators[key] = values
+                            if pd.isna(values):
+                                latest_indicators[key] = None
+                            else:
+                                latest_indicators[key] = float(values) if isinstance(values, (int, float, np.number)) else values
                         else:
                             # その他の型
                             latest_indicators[key] = values
@@ -345,15 +358,15 @@ class LongTermStockAnalyzer:
         
         # 簡易的なサポート・レジスタンス計算
         support_levels = [
-            recent_prices.min(),
-            recent_prices.quantile(0.25),
-            recent_prices.quantile(0.33)
+            float(recent_prices.min()),
+            float(recent_prices.quantile(0.25)),
+            float(recent_prices.quantile(0.33))
         ]
         
         resistance_levels = [
-            recent_prices.max(),
-            recent_prices.quantile(0.75),
-            recent_prices.quantile(0.67)
+            float(recent_prices.max()),
+            float(recent_prices.quantile(0.75)),
+            float(recent_prices.quantile(0.67))
         ]
         
         return support_levels, resistance_levels

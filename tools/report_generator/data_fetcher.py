@@ -131,6 +131,48 @@ class DataFetcher:
             logger.error(f"銘柄 {stock_code} の株価履歴取得中にエラー: {e}")
             return None
     
+    def get_long_term_stock_price_history(self, stock_code: str, years: int = 5) -> Optional[pd.DataFrame]:
+        """長期分析用の株価履歴を取得（複数年分）"""
+        try:
+            session = self.SessionLocal()
+            
+            # 年数に基づいて日数を計算（約252営業日/年）
+            days = years * 252
+            
+            query = text("""
+            SELECT price_date, open_price, high_price, low_price, close_price, volume
+            FROM stock_prices_history 
+            WHERE stock_code = :stock_code
+            ORDER BY price_date DESC
+            LIMIT :days
+            """)
+            
+            result = session.execute(query, {"stock_code": stock_code, "days": days})
+            rows = result.fetchall()
+            
+            session.close()
+            
+            if rows:
+                # データをDataFrameに変換
+                df = pd.DataFrame([dict(row._mapping) for row in rows])
+                df['price_date'] = pd.to_datetime(df['price_date'])
+                df = df.sort_values('price_date').reset_index(drop=True)
+                
+                # 数値型に変換
+                numeric_cols = ['open_price', 'high_price', 'low_price', 'close_price', 'volume']
+                for col in numeric_cols:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                logger.info(f"銘柄 {stock_code} の長期株価履歴取得完了: {len(df)}日分（{years}年分）")
+                return df
+            else:
+                logger.warning(f"銘柄 {stock_code} の長期株価履歴が見つかりません")
+                return None
+                
+        except Exception as e:
+            logger.error(f"銘柄 {stock_code} の長期株価履歴取得中にエラー: {e}")
+            return None
+    
     def get_portfolio_holdings_info(self, stock_code: str) -> List[Dict]:
         """銘柄のポートフォリオ保有情報を取得"""
         try:

@@ -56,28 +56,40 @@ class LongTermStockReportGenerator:
         try:
             logger.info(f"銘柄 {stock_code} の長期レポート生成開始")
             
-            # 1. データ取得
-            stock_data = self.data_fetcher.get_all_stock_data(stock_code)
+            # 1. データ取得（長期分析用に5年分のデータを取得）
+            basic_info = self.data_fetcher.get_stock_basic_info(stock_code)
+            price_history = self.data_fetcher.get_long_term_stock_price_history(stock_code, years=5)
+            portfolio_info = self.data_fetcher.get_portfolio_holdings_info(stock_code)
+            trading_plans = self.data_fetcher.get_trading_plans_info(stock_code)
+            
+            stock_data = {
+                "stock_code": stock_code,
+                "basic_info": basic_info,
+                "price_history": price_history,
+                "portfolio_info": portfolio_info,
+                "trading_plans": trading_plans
+            }
             
             # DataFrameの空チェックを修正
-            price_history = stock_data.get('price_history')
             if price_history is None or (hasattr(price_history, 'empty') and price_history.empty):
                 logger.warning(f"銘柄 {stock_code} の株価データがありません")
                 return False
             
-            # 長期分析には十分なデータが必要
-            if len(price_history) < 200:
-                logger.warning(f"銘柄 {stock_code} のデータが不足しています（200日以上必要）")
+            # 長期分析には十分なデータが必要（最低1年分）
+            if len(price_history) < 252:
+                logger.warning(f"銘柄 {stock_code} のデータが不足しています（1年分以上必要）")
                 return False
+            
+            logger.info(f"利用可能なデータ日数: {len(price_history)}日")
             
             # 2. 長期分析実行
             stock_info = {
                 'stock_code': stock_code,
-                'stock_name': stock_data.get('basic_info', {}).get('stock_name', '不明'),
-                'industry': stock_data.get('basic_info', {}).get('industry', '不明'),
-                'market': stock_data.get('basic_info', {}).get('market', '不明')
+                'stock_name': basic_info.get('stock_name', '不明') if basic_info else '不明',
+                'industry': basic_info.get('industry', '不明') if basic_info else '不明',
+                'market': basic_info.get('market', '不明') if basic_info else '不明'
             }
-            analysis_result = self.analyzer.analyze_long_term_stock(stock_data.get('price_history'), stock_info)
+            analysis_result = self.analyzer.analyze_long_term_stock(price_history, stock_info)
             if not analysis_result:
                 logger.warning(f"銘柄 {stock_code} の長期分析に失敗しました")
                 return False
@@ -185,6 +197,18 @@ class LongTermStockReportGenerator:
         # サポート・レジスタンスレベル
         support_levels = indicators.get('support_levels', [])
         resistance_levels = indicators.get('resistance_levels', [])
+        
+        # データ型チェックと変換
+        if isinstance(support_levels, (int, float)):
+            support_levels = [support_levels]
+        elif not isinstance(support_levels, list):
+            support_levels = []
+            
+        if isinstance(resistance_levels, (int, float)):
+            resistance_levels = [resistance_levels]
+        elif not isinstance(resistance_levels, list):
+            resistance_levels = []
+        
         report_data['support_levels'] = [self._format_number(level) for level in support_levels]
         report_data['resistance_levels'] = [self._format_number(level) for level in resistance_levels]
         

@@ -222,22 +222,54 @@ class StockVisualizer:
         stoch_d = stoch_k.rolling(window=d_period).mean()
         return stoch_k, stoch_d
     
-    def create_signal_summary_chart(self, analysis_result: Dict) -> Optional[str]:
+    def create_signal_summary_chart(self, analysis_result: Dict, stock_code: str = None) -> Optional[str]:
         """シグナルサマリーチャートを作成"""
         try:
-            stock_code = analysis_result['stock_code']
+            # stock_codeがanalysis_resultにない場合は引数から取得
+            if stock_code is None:
+                stock_code = analysis_result.get('stock_code', 'unknown')
             signals = analysis_result.get('signals', {})
             
             if not signals:
+                logger.info(f"銘柄 {stock_code} のシグナルデータがありません")
                 return None
+            
+            # デバッグ情報
+            logger.debug(f"銘柄 {stock_code} のシグナルデータ: {signals}")
             
             # シグナルをカテゴリ別に分類
             signal_types = ['買い', '売り', '中立']
-            signal_counts = {
-                '買い': signals.get('buy_count', 0),
-                '売り': signals.get('sell_count', 0),
-                '中立': len([v for v in signals.values() if v == '中立'])
-            }
+            
+            # 安全なシグナルカウント計算
+            try:
+                # シグナル文字列からカウントを計算
+                buy_count = 0
+                sell_count = 0
+                neutral_count = 0
+                
+                for key, value in signals.items():
+                    if isinstance(value, str):
+                        if '買い' in value or '強気' in value or 'ゴールデンクロス' in value:
+                            buy_count += 1
+                        elif '売り' in value or '弱気' in value or 'デッドクロス' in value:
+                            sell_count += 1
+                        elif '中立' in value or 'バンド内' in value:
+                            neutral_count += 1
+                
+                # 詳細なデバッグ情報
+                logger.debug(f"銘柄 {stock_code} のシグナルカウント - 買い: {buy_count}, 売り: {sell_count}, 中立: {neutral_count}")
+                
+                # 最終的な値の確認
+                logger.debug(f"銘柄 {stock_code} の最終シグナルカウント - 買い: {buy_count}, 売り: {sell_count}, 中立: {neutral_count}")
+                
+                signal_counts = {
+                    '買い': buy_count,
+                    '売り': sell_count,
+                    '中立': neutral_count
+                }
+            except Exception as e:
+                logger.warning(f"銘柄 {stock_code} のシグナルカウント計算中にエラー: {e}")
+                signal_counts = {'買い': 0, '売り': 0, '中立': 0}
             
             # 円グラフを作成
             fig, ax = plt.subplots(figsize=(8, 6))
@@ -287,7 +319,7 @@ class StockVisualizer:
             charts = {
                 'price_chart': self.create_price_chart(stock_data, analysis_result),
                 'technical_chart': self.create_technical_chart(stock_data, analysis_result),
-                'signal_summary': self.create_signal_summary_chart(analysis_result)
+                'signal_summary': self.create_signal_summary_chart(analysis_result, stock_code)
             }
             
             # None値を除去
